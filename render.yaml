@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: wuzhen-jianyin
+    runtime: docker
+    plan: free
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: ALLOW_SHARED_CNKI
+        value: "false"
+      - key: MAX_FILE_MB
+        value: "20"
+      - key: JOB_TTL_SECONDS
+        value: "604800"
+      - key: DATABASE_URL
+        sync: false

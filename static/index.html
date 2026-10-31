@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="悟真鉴引：面向学术论著的引文核验与证据链优化智能体">
+  <title>悟真鉴引 · 引文核验智能体</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <div class="paper-grain" aria-hidden="true"></div>
+  <header class="site-header">
+    <a class="brand" href="/" aria-label="悟真鉴引首页">
+      <span class="brand-mark">鉴</span>
+      <span>
+        <strong>悟真鉴引</strong>
+        <small>Citation Integrity Agent</small>
+      </span>
+    </a>
+    <div class="header-actions">
+      <span id="modelBadge" class="quiet badge">正在检查模型配置</span>
+      <a class="btn btn-ghost" href="/standalone">单页版</a>
+      <button id="shareNavButton" class="btn btn-ghost" type="button" disabled>分享应用</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow"><span></span> 学术引文核验与证据链工作台</p>
+        <h1>先找到证据，<br><em>再谈引用是否成立。</em></h1>
+        <p class="hero-lead">
+          从论文中提取参考文献和正文引用，核对题录真实性、字段冲突、编号关系与证据支持度。
+          不把“未检索到”武断写成“文献不存在”。
+        </p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#workbench">开始核验</a>
+          <button id="loadExampleButton" class="btn btn-soft" type="button">载入测试样例</button>
+        </div>
+        <div class="trust-line">
+          <span>PDF / DOCX / TXT / Markdown</span>
+          <span>本地临时处理</span>
+          <span>证据可追溯</span>
+        </div>
+      </div>
+      <aside class="hero-note" aria-label="核验原则">
+        <div class="note-label">核验边界</div>
+        <blockquote>“暂未检出”只表示当前来源没有找到对应记录，不能据此认定文献虚假。</blockquote>
+        <div class="source-list">
+          <span>Crossref</span><span>OpenAlex</span><span>DataCite</span>
+        </div>
+      </aside>
+    </section>
+
+    <section id="workbench" class="workbench shell">
+      <div class="workbench-heading">
+        <div>
+          <p class="section-kicker">01 / INPUT</p>
+          <h2>提交需要核验的材料</h2>
+        </div>
+        <p>一次处理一篇论文，或一组参考文献。</p>
+      </div>
+      <div class="workspace-grid">
+        <section class="input-card">
+          <div class="mode-tabs" role="tablist" aria-label="输入方式">
+            <button class="mode-tab active" data-mode="file" role="tab" aria-selected="true">上传论文</button>
+            <button class="mode-tab" data-mode="paste" role="tab" aria-selected="false">粘贴文献列表</button>
+          </div>
+
+          <div id="filePanel" class="mode-panel active">
+            <label id="dropZone" class="drop-zone" for="paperFile">
+              <input id="paperFile" type="file" accept=".pdf,.docx,.txt,.md,.markdown">
+              <span class="drop-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M12 16V4m0 0L7 9m5-5 5 5M5 14v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"/></svg>
+              </span>
+              <strong id="dropTitle">拖入论文，或点击选择文件</strong>
+              <span id="dropHint">文件必须包含独立的“参考文献 / References”分节标题</span>
+              <span class="drop-meta">PDF · DOCX · TXT · Markdown　最大 20 MB</span>
+            </label>
+            <div id="fileMeta" class="selected-file" hidden></div>
+          </div>
+
+          <div id="pastePanel" class="mode-panel">
+            <label class="field-label" for="pasteText">参考文献列表</label>
+            <textarea id="pasteText" rows="10" placeholder="示例：&#10;[1] He, K. et al. Deep Residual Learning for Image Recognition. 2016. DOI: 10.1109/CVPR.2016.90.&#10;[2] ..."></textarea>
+            <p class="field-help">粘贴模式不需要“参考文献”标题，但只能检查题录完整性、重复和 DOI 冲突，不判断正文语义。</p>
+          </div>
+
+          <div class="privacy-row">
+            <span class="privacy-dot"></span>
+            上传内容只在当前运行内存中处理，任务两小时后清理。
+          </div>
+          <button id="startButton" class="btn btn-primary btn-block" type="button">
+            <span>开始核验</span>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+          </button>
+        </section>
+
+        <aside class="process-card">
+          <p class="section-kicker">02 / METHOD</p>
+          <h3>不是一个黑箱分数</h3>
+          <ol class="process-list">
+            <li><span>01</span><div><strong>解析</strong><p>识别参考文献分节、文献条目和正文引用。</p></div></li>
+            <li><span>02</span><div><strong>核验</strong><p>优先解析 DOI，再用题名、作者和年份多源比对。</p></div></li>
+            <li><span>03</span><div><strong>取证</strong><p>只有获得摘要或开放全文，才判断正文支持度。</p></div></li>
+            <li><span>04</span><div><strong>修订</strong><p>显示字段差异、问题来源和下一步处理动作。</p></div></li>
+          </ol>
+          <div class="evidence-note">
+            <span class="evidence-icon">!</span>
+            <p>没有证据时，我们只输出“证据不足”，不猜测。</p>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="progressSection" class="progress-section shell" hidden>
+      <div class="progress-card">
+        <div class="progress-copy">
+          <p class="section-kicker">03 / RUNNING</p>
+          <h2 id="progressTitle">正在建立核验证据链</h2>
+          <p id="progressDetail">正在读取文件并检查分节结构。</p>
+        </div>
+        <div class="progress-percent"><span id="progressNumber">0</span><small>%</small></div>
+        <div class="progress-track"><div id="progressBar" class="progress-bar"></div></div>
+        <div id="stepList" class="step-list"></div>
+      </div>
+    </section>
+
+    <section id="errorSection" class="shell error-card" hidden>
+      <div class="error-symbol">!</div>
+      <div><h2>这次没有完成核验</h2><p id="errorMessage"></p></div>
+      <button id="retryButton" class="btn btn-soft" type="button">返回修改</button>
+    </section>
+
+    <section id="reportSection" class="report shell" hidden>
+      <div class="report-head">
+        <div>
+          <p class="section-kicker">VERIFICATION REPORT</p>
+          <h2>引文核验报告</h2>
+          <p id="reportMeta" class="report-meta"></p>
+        </div>
+        <div class="report-actions">
+          <button id="copyButton" class="btn btn-ghost" type="button">复制报告</button>
+          <button id="shareButton" class="btn btn-ghost" type="button">分享结果</button>
+          <button id="printButton" class="btn btn-soft" type="button">打印 / PDF</button>
+          <div class="export-menu">
+            <button id="exportToggle" class="btn btn-primary" type="button">导出文件</button>
+            <div id="exportDropdown" class="export-dropdown">
+              <a data-export="docx">Word 详细报告</a>
+              <a data-export="xlsx">Excel 问题清单</a>
+              <a data-export="pdf">PDF 报告</a>
+              <a data-export="json">JSON 结构化结果</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="sharedBanner" class="shared-banner" hidden></div>
+      <article class="conclusion-band">
+        <div class="conclusion-copy">
+          <span class="seal">鉴</span>
+          <div><p>核心结论</p><h3 id="headline"></h3><p id="overview"></p></div>
+        </div>
+        <div id="sourceMix" class="source-mix"></div>
+      </article>
+
+      <div id="summaryCards" class="summary-grid"></div>
+      <div class="status-visual">
+        <div class="status-visual-head"><strong>题录核验分布</strong><span>不把“暂未检出”解释为“不存在”</span></div>
+        <div id="statusBar" class="status-bar"></div>
+        <div id="statusLegend" class="status-legend"></div>
+      </div>
+
+      <div class="report-viewport">
+        <nav class="report-tabs" aria-label="报告分区">
+          <button class="report-tab active" data-tab="overview">总览</button>
+          <button class="report-tab" data-tab="references">逐条文献</button>
+          <button class="report-tab" data-tab="evidence">证据矩阵</button>
+          <button class="report-tab" data-tab="claims">引文证据链</button>
+          <button class="report-tab" data-tab="quality">质量画像</button>
+          <button class="report-tab" data-tab="revisions">修订对照</button>
+        </nav>
+
+        <div class="report-content">
+          <section id="tab-overview" class="report-panel active">
+            <div class="panel-heading"><div><span>风险优先级</span><h3>先处理会影响结论的问题</h3></div><span id="issueCount" class="quiet"></span></div>
+            <div id="issueList" class="issue-list"></div>
+          </section>
+
+          <section id="tab-references" class="report-panel">
+            <div class="panel-heading"><div><span>文献明细</span><h3>逐条查看题录、风险与补证动作</h3></div>
+              <div class="filter-controls">
+                <input id="referenceSearch" type="search" placeholder="搜索标题、作者或 DOI">
+                <button id="highRiskFilter" class="filter-chip" type="button">只看高风险</button>
+              </div>
+            </div>
+            <div id="referenceList" class="reference-list"></div>
+          </section>
+
+          <section id="tab-evidence" class="report-panel">
+            <div class="panel-heading"><div><span>多源对照</span><h3>题录与来源字段的一致性</h3></div></div>
+            <div class="table-wrap">
+              <table class="evidence-table">
+                <thead><tr><th>编号</th><th>来源</th><th>状态</th><th>来源标题</th><th>年份</th><th>说明 / 链接</th></tr></thead>
+                <tbody id="evidenceTableBody"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section id="tab-claims" class="report-panel">
+            <div class="panel-heading"><div><span>正文主张</span><h3>每一条支持判断都必须能找到证据</h3></div></div>
+            <div id="claimList" class="claim-list"></div>
+          </section>
+
+          <section id="tab-quality" class="report-panel">
+            <div class="panel-heading"><div><span>数据画像</span><h3>从覆盖、风险与字段完整度看核验质量</h3></div></div>
+            <div id="qualityDashboard" class="quality-dashboard"></div>
+          </section>
+
+          <section id="tab-revisions" class="report-panel">
+            <div class="panel-heading"><div><span>修订建议</span><h3>保留原文，只呈现差异与动作</h3></div></div>
+            <div id="revisionList" class="revision-list"></div>
+          </section>
+
+          <div class="boundary-card">
+            <strong>使用边界</strong>
+            <ul id="boundaryList"></ul>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer shell">
+    <div><strong>悟真鉴引</strong><span>面向学术论著的引文核验与证据链优化智能体</span></div>
+    <div>不代替导师、编辑或评审专家作出最终判断</div>
+  </footer>
+
+  <dialog id="supplementDialog" class="dialog">
+    <form method="dialog" class="dialog-card">
+      <button class="dialog-close" value="cancel" aria-label="关闭">×</button>
+      <p class="section-kicker">SUPPLEMENT</p>
+      <h2>补充 DOI 后重新核验</h2>
+      <p id="supplementTitle" class="dialog-context"></p>
+      <label class="field-label" for="doiInput">DOI</label>
+      <input id="doiInput" class="text-input" placeholder="例如 10.1109/CVPR.2016.90">
+      <div class="dialog-actions">
+        <button class="btn btn-ghost" value="cancel" type="button" data-close-dialog>取消</button>
+        <button id="supplementSubmit" class="btn btn-primary" type="button">核验并更新</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="shareDialog" class="dialog">
+    <form method="dialog" class="dialog-card share-dialog-card">
+      <button class="dialog-close" value="cancel" aria-label="关闭">×</button>
+      <p class="section-kicker">SHARE</p>
+      <h2 id="shareDialogTitle">分享脱敏核验结果</h2>
+      <p id="shareDialogContext" class="dialog-context">链接只包含本次核验结果，不包含原文件；默认隐藏论文来源名称。</p>
+      <img id="shareQr" class="share-qr" alt="核验报告分享二维码">
+      <div class="share-link-row">
+        <input id="shareLink" class="text-input" readonly>
+        <button id="copyShareLink" class="btn btn-primary" type="button">复制</button>
+      </div>
+      <p id="shareExpiry" class="field-help"></p>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="/static/app.js"></script>
+</body>
+</html>
+
